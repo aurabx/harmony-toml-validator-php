@@ -1,0 +1,5 @@
+# Invalid: Missing required [proxy] table
+# Expected error: Required table 'proxy' is missing
+
+[logging]
+log_level = "info"

@@ -1,0 +1,303 @@
+# Harmony Proxy Pipeline Configuration Schema DSL
+# This schema defines the structure and validation rules for harmony-proxy pipeline files
+# It can be parsed and validated in both Rust (harmony-proxy) and PHP (runbeam cloud API)
+
+[schema]
+version = "1.4.0"
+description = "Harmony Proxy pipeline configuration schema for routing and middleware chains"
+
+# ========================================================================================
+# PIPELINES TABLE - Pipeline definitions (multiple instances)
+# ========================================================================================
+[[table]]
+name = "pipelines.*"
+pattern = true
+pattern_constraint = "^[a-z0-9_-]+$"
+required = false
+description = "Pipeline definition linking endpoints, middleware, and backends"
+
+[[table.field]]
+name = "id"
+type = "string"
+required = false
+description = "Optional unique identifier for this pipeline"
+
+[[table.field]]
+name = "description"
+type = "string"
+required = false
+description = "Human-readable description of this pipeline"
+
+[[table.field]]
+name = "networks"
+type = "array"
+required = true
+array_item_type = "string"
+min_items = 1
+description = "List of network names this pipeline listens on"
+
+[[table.field]]
+name = "endpoints"
+type = "array"
+required = true
+array_item_type = "string"
+min_items = 1
+description = "List of endpoint identifiers for this pipeline"
+
+[[table.field]]
+name = "middleware"
+type = "array"
+required = false
+array_item_type = "string"
+description = "Ordered list of middleware identifiers to apply"
+
+[[table.field]]
+name = "backends"
+type = "array"
+required = true
+array_item_type = "string"
+min_items = 1
+description = "List of backend identifiers for this pipeline"
+
+# ========================================================================================
+# ENDPOINTS TABLE - Endpoint configurations (multiple instances)
+# ========================================================================================
+[[table]]
+name = "endpoints.*"
+pattern = true
+pattern_constraint = "^[a-z0-9_-]+$"
+required = false
+description = "Endpoint configuration defining how requests are received"
+
+[[table.field]]
+name = "id"
+type = "string"
+required = false
+description = "Optional unique identifier for this endpoint"
+
+[[table.field]]
+name = "service"
+type = "string"
+required = true
+description = "Service type for this endpoint (must match a registered service)"
+
+[[table.field]]
+name = "options"
+type = "table"
+required = false
+description = "Service-specific options for this endpoint"
+
+# HTTP Service Endpoint Options
+[[table.field]]
+name = "options.path_prefix"
+type = "string"
+required = false
+description = "Path prefix for HTTP endpoints"
+
+# DICOM Service Endpoint Options
+[[table.field]]
+name = "options.aet"
+type = "string"
+required = false
+description = "Application Entity Title for DICOM endpoints"
+
+[[table.field]]
+name = "options.port"
+type = "integer"
+required = false
+min = 1
+max = 65535
+description = "Port for DICOM endpoints"
+
+# ========================================================================================
+# BACKENDS TABLE - Backend configurations (multiple instances)
+# ========================================================================================
+[[table]]
+name = "backends.*"
+pattern = true
+pattern_constraint = "^[a-z0-9_-]+$"
+required = false
+description = "Backend configuration defining where requests are forwarded"
+
+[[table.field]]
+name = "id"
+type = "string"
+required = false
+description = "Optional unique identifier for this backend"
+
+[[table.field]]
+name = "service"
+type = "string"
+required = true
+description = "Service type for this backend (must match a registered service)"
+
+[[table.field]]
+name = "options"
+type = "table"
+required = false
+description = "Service-specific options for this backend"
+
+# HTTP Backend Options
+[[table.field]]
+name = "options.path_prefix"
+type = "string"
+required = false
+description = "Path prefix for HTTP backends"
+
+[[table.field]]
+name = "options.base_url"
+type = "string"
+required = false
+description = "Base URL for HTTP backends"
+
+# DICOM Backend Options
+[[table.field]]
+name = "options.aet"
+type = "string"
+required = false
+description = "Remote Application Entity Title for DICOM backends"
+
+[[table.field]]
+name = "options.host"
+type = "string"
+required = false
+description = "Remote host for DICOM backends"
+
+[[table.field]]
+name = "options.port"
+type = "integer"
+required = false
+min = 1
+max = 65535
+description = "Remote port for DICOM backends"
+
+[[table.field]]
+name = "options.local_aet"
+type = "string"
+required = false
+description = "Local Application Entity Title for DICOM SCU operations"
+
+# ========================================================================================
+# MIDDLEWARE TABLE - Middleware instance configurations (multiple instances)
+# ========================================================================================
+[[table]]
+name = "middleware.*"
+pattern = true
+pattern_constraint = "^[a-z0-9_-]+$"
+required = false
+description = "Middleware instance configuration"
+
+[[table.field]]
+name = "id"
+type = "string"
+required = false
+description = "Optional unique identifier for this middleware instance"
+
+[[table.field]]
+name = "type"
+type = "string"
+required = true
+description = "Middleware type (must match a registered middleware_type)"
+
+[[table.field]]
+name = "options"
+type = "table"
+required = false
+description = "Middleware-specific options"
+
+# Basic Auth Middleware Options
+[[table.field]]
+name = "options.token_path"
+type = "string"
+required = false
+description = "Path to token file for basic_auth middleware"
+
+[[table.field]]
+name = "options.username"
+type = "string"
+required = false
+description = "Username for basic_auth middleware"
+
+[[table.field]]
+name = "options.password"
+type = "string"
+required = false
+description = "Password for basic_auth middleware"
+
+# Transform Middleware Options
+[[table.field]]
+name = "options.spec_path"
+type = "string"
+required = false
+description = "Path to JOLT transform specification file for transform middleware"
+
+[[table.field]]
+name = "options.apply"
+type = "string"
+required = false
+enum = ["left", "right", "both"]
+default = "left"
+description = "When to apply transform: left (request), right (response), or both"
+
+[[table.field]]
+name = "options.fail_on_error"
+type = "boolean"
+required = false
+default = false
+description = "Whether to fail the request if transform fails"
+
+# JWT Auth Middleware Options
+[[table.field]]
+name = "options.issuer"
+type = "string"
+required = false
+description = "JWT token issuer for jwtauth middleware"
+
+[[table.field]]
+name = "options.audience"
+type = "string"
+required = false
+description = "JWT token audience for jwtauth middleware"
+
+# Path Filter Middleware Options
+[[table.field]]
+name = "options.rules"
+type = "array"
+array_item_type = "table"
+required = false
+min_items = 1
+description = "Array of path filter rules. Each rule must have either 'allow' or 'deny' field (mutually exclusive). Rules are evaluated in order."
+
+[[table.field]]
+name = "options.rules.allow"
+type = "string"
+required = false
+description = "Path pattern to allow using matchit syntax (e.g., '/ImagingStudy', '/Patient/{id}'). Mutually exclusive with 'deny'."
+
+[[table.field]]
+name = "options.rules.deny"
+type = "string"
+required = false
+description = "Path pattern to deny using matchit syntax (e.g., '*' for deny-all). Mutually exclusive with 'allow'."
+
+# ========================================================================================
+# MIDDLEWARE_TYPES TABLE - Additional middleware type registrations (optional, for pipeline-specific types)
+# ========================================================================================
+[[table]]
+name = "middleware_types.*"
+pattern = true
+pattern_constraint = "^[a-z0-9_-]+$"
+required = false
+description = "Additional middleware type registrations (supplements main config)"
+
+[[table.field]]
+name = "id"
+type = "string"
+required = false
+description = "Optional unique identifier for this middleware type"
+
+[[table.field]]
+name = "module"
+type = "string"
+required = true
+description = "Module path for this middleware type (empty string for built-in)"

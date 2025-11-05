@@ -1,0 +1,13 @@
+# Minimal valid Harmony pipeline configuration
+# Only includes required fields
+
+[pipelines.default]
+networks = ["default"]
+endpoints = ["http-ep"]
+backends = ["http-backend"]
+
+[endpoints.http-ep]
+service = "http"
+
+[backends.http-backend]
+service = "http"

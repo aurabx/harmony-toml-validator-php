@@ -1,0 +1,8 @@
+# Invalid: logging.log_level has invalid enum value
+# Expected error: Invalid value 'invalid' for 'logging.log_level'. Allowed values: trace, debug, info, warn, error
+
+[proxy]
+id = "gateway-01"
+
+[logging]
+log_level = "invalid"

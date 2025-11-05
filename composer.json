@@ -1,0 +1,40 @@
+{
+    "name": "runbeam/harmony-toml-validator",
+    "description": "TOML validation library for Harmony Proxy configuration files against DSL schemas",
+    "type": "library",
+    "keywords": ["toml", "validation", "harmony", "schema", "dsl"],
+    "license": "MIT",
+    "require": {
+        "php": "^8.3",
+        "yosymfony/toml": "^1.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0",
+        "phpstan/phpstan": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Runbeam\\HarmonyTomlValidator\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Runbeam\\HarmonyTomlValidator\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "test:coverage": "phpunit --coverage-html coverage --coverage-text",
+        "analyse": "phpstan analyse --memory-limit=512M",
+        "check": [
+            "@analyse",
+            "@test"
+        ]
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

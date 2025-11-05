@@ -1,0 +1,9 @@
+# Invalid: proxy.jwks_cache_duration_hours is above maximum of 168
+# Expected error: Value 200 at 'proxy.jwks_cache_duration_hours' exceeds maximum 168
+
+[proxy]
+id = "gateway-01"
+jwks_cache_duration_hours = 200
+
+[logging]
+log_level = "info"

@@ -1,0 +1,8 @@
+# Invalid: proxy.id should be string, not integer
+# Expected error: Type mismatch at 'proxy.id': expected string, got int
+
+[proxy]
+id = 12345
+
+[logging]
+log_level = "info"

@@ -1,0 +1,5 @@
+# Minimal valid Harmony proxy configuration
+# Only includes required fields
+
+[proxy]
+id = "gateway-01"

@@ -1,0 +1,278 @@
+# Harmony Proxy Configuration Schema DSL
+# This schema defines the structure and validation rules for harmony-proxy config files
+# It can be parsed and validated in both Rust (harmony-proxy) and PHP (runbeam cloud API)
+
+[schema]
+version = "1.4.0"
+description = "Harmony Proxy configuration schema for gateway configurations"
+
+# ========================================================================================
+# PROXY TABLE - Core proxy configuration
+# ========================================================================================
+[[table]]
+name = "proxy"
+required = true
+description = "Core proxy configuration settings"
+
+[[table.field]]
+name = "id"
+type = "string"
+required = true
+description = "Unique identifier for this proxy instance"
+
+[[table.field]]
+name = "pipelines_path"
+type = "string"
+required = false
+default = "pipelines"
+description = "Directory path for pipeline configuration files (relative to config file)"
+
+[[table.field]]
+name = "transforms_path"
+type = "string"
+required = false
+default = "transforms"
+description = "Directory path for transform specification files (relative to config file)"
+
+[[table.field]]
+name = "jwks_cache_duration_hours"
+type = "integer"
+required = false
+default = 24
+min = 1
+max = 168
+description = "Duration (in hours) to cache JWKS keys from Runbeam Cloud"
+
+# ========================================================================================
+# RUNBEAM TABLE - Runbeam Cloud integration configuration
+# ========================================================================================
+[[table]]
+name = "runbeam"
+required = false
+description = "Runbeam Cloud integration configuration"
+
+[[table.field]]
+name = "enabled"
+type = "boolean"
+required = false
+default = false
+description = "Whether Runbeam Cloud integration is enabled"
+
+[[table.field]]
+name = "cloud_api_base_url"
+type = "string"
+required = false
+description = "Base URL for Runbeam Cloud API (optional override, defaults to https://api.runbeam.cloud)"
+
+[[table.field]]
+name = "poll_interval_secs"
+type = "integer"
+required = false
+default = 30
+min = 5
+max = 3600
+description = "Interval in seconds for polling cloud API (default: 30s). Note: Polling starts automatically after gateway authorization via /admin/authorize"
+
+# ========================================================================================
+# MANAGEMENT TABLE - Management API configuration
+# ========================================================================================
+[[table]]
+name = "management"
+required = false
+description = "Management API configuration for admin operations"
+
+[[table.field]]
+name = "enabled"
+type = "boolean"
+required = false
+default = false
+description = "Whether the management API is enabled"
+
+[[table.field]]
+name = "base_path"
+type = "string"
+required = false
+default = "admin"
+description = "Base path for management endpoints"
+
+[[table.field]]
+name = "network"
+type = "string"
+required = true
+required_if = "enabled == true"
+description = "Network name to bind management API to"
+
+# ========================================================================================
+# NETWORK TABLE - Network configurations (multiple instances)
+# ========================================================================================
+[[table]]
+name = "network.*"
+pattern = true
+pattern_constraint = "^[a-z0-9_-]+$"
+required = false
+description = "Network configuration (can have multiple named instances like network.default, network.management)"
+
+[[table.field]]
+name = "id"
+type = "string"
+required = false
+description = "Optional unique identifier for this network instance"
+
+[[table.field]]
+name = "enable_wireguard"
+type = "boolean"
+required = false
+default = false
+description = "Whether to enable WireGuard connections on this network"
+
+[[table.field]]
+name = "interface"
+type = "string"
+required = true
+required_if = "enable_wireguard == true"
+default = "wg0"
+description = "WireGuard interface name"
+
+# Backward Compatibility: The field was previously named 'http' in schema versions prior to 1.2.0.
+# TOML files may still use [network.*.http] which will be aliased to tcp_config during deserialization.
+# Both names are accepted in configuration files for backward compatibility.
+[[table.field]]
+name = "tcp_config"
+type = "table"
+required = false
+description = "TCP network bind settings - used by all protocol adapters (HTTP, DIMSE, etc.). Note: 'http' is accepted as an alias for backward compatibility in TOML files"
+
+[[table.field]]
+name = "tcp_config.bind_address"
+type = "string"
+required = true
+required_if = "tcp_config exists"
+default = "0.0.0.0"
+description = "TCP listener bind address - IP address or hostname to bind the TCP listener to"
+
+[[table.field]]
+name = "tcp_config.bind_port"
+type = "integer"
+required = true
+required_if = "tcp_config exists"
+default = 8080
+min = 1
+max = 65535
+description = "TCP listener bind port - Port number for the TCP listener"
+
+# ========================================================================================
+# LOGGING TABLE - Logging configuration
+# ========================================================================================
+[[table]]
+name = "logging"
+required = false
+description = "File logging configuration"
+
+[[table.field]]
+name = "log_level"
+type = "string"
+required = false
+default = "error"
+enum = ["trace", "debug", "info", "warn", "error"]
+description = "Logging verbosity level"
+
+[[table.field]]
+name = "log_to_file"
+type = "boolean"
+required = false
+default = false
+description = "Whether to enable file logging"
+
+[[table.field]]
+name = "log_file_path"
+type = "string"
+required = true
+required_if = "log_to_file == true"
+description = "Path to log file (relative or absolute)"
+
+# ========================================================================================
+# STORAGE TABLE - Storage backend configuration
+# ========================================================================================
+[[table]]
+name = "storage"
+required = false
+description = "Configurable storage backend for temporary files"
+
+[[table.field]]
+name = "backend"
+type = "string"
+required = true
+enum = ["filesystem", "s3", "memory"]
+default = "filesystem"
+description = "Storage backend type"
+
+[[table.field]]
+name = "options"
+type = "table"
+required = false
+description = "Backend-specific options"
+
+[[table.field]]
+name = "options.path"
+type = "string"
+required = true
+required_if = "backend == 'filesystem'"
+description = "Filesystem path for file storage"
+
+[[table.field]]
+name = "options.bucket"
+type = "string"
+required = true
+required_if = "backend == 's3'"
+description = "S3 bucket name"
+
+[[table.field]]
+name = "options.region"
+type = "string"
+required = false
+required_if = "backend == 's3'"
+description = "S3 region"
+
+# ========================================================================================
+# SERVICES TABLE - Service type registrations
+# ========================================================================================
+[[table]]
+name = "services.*"
+pattern = true
+pattern_constraint = "^[a-z0-9_-]+$"
+required = false
+description = "Service type registrations (e.g., services.http, services.fhir, services.dicom)"
+
+[[table.field]]
+name = "id"
+type = "string"
+required = false
+description = "Optional unique identifier for this service type"
+
+[[table.field]]
+name = "module"
+type = "string"
+required = true
+description = "Module path for this service type (empty string for built-in)"
+
+# ========================================================================================
+# MIDDLEWARE_TYPES TABLE - Middleware type registrations
+# ========================================================================================
+[[table]]
+name = "middleware_types.*"
+pattern = true
+pattern_constraint = "^[a-z0-9_-]+$"
+required = false
+description = "Middleware type registrations (e.g., middleware_types.jwtauth, middleware_types.transform)"
+
+[[table.field]]
+name = "id"
+type = "string"
+required = false
+description = "Optional unique identifier for this middleware type"
+
+[[table.field]]
+name = "module"
+type = "string"
+required = true
+description = "Module path for this middleware type (empty string for built-in)"

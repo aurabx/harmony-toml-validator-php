@@ -1,0 +1,9 @@
+# Invalid: proxy.jwks_cache_duration_hours is below minimum of 1
+# Expected error: Value 0 at 'proxy.jwks_cache_duration_hours' is below minimum 1
+
+[proxy]
+id = "gateway-01"
+jwks_cache_duration_hours = 0
+
+[logging]
+log_level = "info"
