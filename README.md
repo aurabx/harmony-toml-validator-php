@@ -5,7 +5,7 @@ PHP library for validating TOML configuration files against Harmony DSL schemas.
 ## Installation
 
 ```bash
-composer require runbeam/harmony-toml-validator
+composer require aurabx/harmony-toml-validator
 ```
 
 ## Requirements
