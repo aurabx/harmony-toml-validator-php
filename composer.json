@@ -1,9 +1,17 @@
 {
-    "name": "runbeam/harmony-toml-validator",
+    "name": "aurabx/harmony-toml-validator",
     "description": "TOML validation library for Harmony Proxy configuration files against DSL schemas",
     "type": "library",
-    "keywords": ["toml", "validation", "harmony", "schema", "dsl"],
+    "keywords": ["toml", "validation", "harmony", "schema", "dsl", "configuration"],
     "license": "MIT",
+    "homepage": "https://github.com/aurabx/harmony-toml-validator-php",
+    "authors": [
+        {
+            "name": "Aurabox",
+            "email": "hello@aurabox.cloud",
+            "role": "Developer"
+        }
+    ],
     "require": {
         "php": "^8.3",
         "yosymfony/toml": "^1.0"
