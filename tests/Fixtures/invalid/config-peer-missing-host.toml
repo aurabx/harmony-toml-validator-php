@@ -1,0 +1,24 @@
+[proxy]
+id = "gateway-bad"
+pipelines_path = "pipelines"
+
+[network.default]
+enable_wireguard = false
+
+[[network.default.tcp_config]]
+bind_address = "0.0.0.0"
+bind_port = 8080
+
+[logging]
+log_level = "info"
+
+[storage]
+backend = "filesystem"
+
+[peers.hospital_a]
+name = "Hospital A"
+protocol = "https"
+
+[peers.hospital_a.connection]
+port = 443
+base_path = "/api/v1"

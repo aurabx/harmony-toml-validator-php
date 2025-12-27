@@ -34,8 +34,8 @@ The validator prevents invalid configurations from being deployed by catching er
 
 The library validates two types of Harmony configuration files:
 
-- **harmony-config-schema.toml** - Main gateway configuration (network settings, logging, storage, services)
-- **harmony-pipeline-schema.toml** - Pipeline routing configuration (endpoints, middleware, backends)
+- **harmony-config-schema.toml** - Main gateway configuration (proxy settings, network listeners with HTTP/3 support, management API, logging, storage, peers, targets, services, authentication, policies, and rules)
+- **harmony-pipeline-schema.toml** - Pipeline routing configuration (endpoint definitions, backend destinations, middleware chains, mesh ingress/egress)
 
 ### DSL Schema Format
 
@@ -67,10 +67,12 @@ enum = ["trace", "debug", "info", "warn", "error"]
 ## Validation Flow
 
 ### Schema Processing
-1. Load schema files (TOML DSL format) that define structure and rules
-2. `TomlValidator` class (to be implemented) parses schemas
-3. Validator applies rules to configuration TOML files
-4. Returns detailed validation errors with field paths and constraint violations
+1. Load schema files (TOML DSL format v1.10.0) that define structure and rules
+2. `SchemaLoader` parses schema files and creates `SchemaDefinition` with table and field metadata
+3. `TomlValidator` parses TOML configuration content using the yosymfony/toml library
+4. Validation context tracks field paths during recursive table/field traversal
+5. Individual validators (type, required, enum, bounds, array, pattern) apply rules
+6. Returns detailed validation errors with field paths and constraint violations
 
 ### Validation Coverage
 
@@ -169,7 +171,7 @@ tmp/                    # Temporary files (gitignored)
 
 ### Development Status
 
-⚠️ **Early-stage project**: Core `TomlValidator` classes and rule implementations are still to be implemented. Exception hierarchy and project structure are complete.
+✅ **Fully implemented**: All validation logic is complete and working. Current version aligns with harmony-dsl v1.10.0. The validator successfully validates Harmony configuration files against DSL schemas.
 
 ### Schema Compatibility Notes
 

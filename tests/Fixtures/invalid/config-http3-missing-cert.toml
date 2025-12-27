@@ -1,0 +1,21 @@
+[proxy]
+id = "gateway-bad"
+pipelines_path = "pipelines"
+
+[network.default]
+enable_wireguard = false
+
+[[network.default.tcp_config]]
+bind_address = "0.0.0.0"
+bind_port = 8080
+
+[network.default.http3]
+bind_address = "0.0.0.0"
+bind_port = 443
+key_path = "/etc/certs/quic.key"
+
+[logging]
+log_level = "info"
+
+[storage]
+backend = "filesystem"

@@ -1,0 +1,18 @@
+[pipelines.bad-pipeline]
+networks = ["default"]
+endpoints = ["endpoint1"]
+backends = ["backend1"]
+
+[endpoints.endpoint1]
+service = "http"
+
+[endpoints.endpoint1.connection]
+host = "api.example.com"
+protocol = "ftp"
+
+[backends.backend1]
+service = "http"
+
+[backends.backend1.connection]
+host = "backend.example.com"
+protocol = "invalid-protocol"

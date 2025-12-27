@@ -3,7 +3,7 @@
 # It can be parsed and validated in both Rust (harmony-proxy) and PHP (runbeam cloud API)
 
 [schema]
-version = "1.4.0"
+version = "1.10.0"
 description = "Harmony Proxy configuration schema for gateway configurations"
 
 # ========================================================================================
@@ -42,6 +42,67 @@ default = 24
 min = 1
 max = 168
 description = "Duration (in hours) to cache JWKS keys from Runbeam Cloud"
+
+[[table.field]]
+name = "content_limits"
+type = "table"
+required = false
+description = "Content parsing and size limits for request handling"
+
+[[table.field]]
+name = "content_limits.max_body_size"
+type = "integer"
+required = false
+default = 10485760
+min = 1024
+description = "Maximum request body size in bytes (default: 10MB)"
+
+[[table.field]]
+name = "content_limits.max_csv_rows"
+type = "integer"
+required = false
+default = 10000
+min = 1
+description = "Maximum rows to parse from CSV files"
+
+[[table.field]]
+name = "content_limits.max_xml_depth"
+type = "integer"
+required = false
+default = 100
+min = 1
+max = 1000
+description = "Maximum XML nesting depth (prevents XML bombs)"
+
+[[table.field]]
+name = "content_limits.max_multipart_files"
+type = "integer"
+required = false
+default = 10
+min = 1
+description = "Maximum files per multipart request"
+
+[[table.field]]
+name = "content_limits.max_form_fields"
+type = "integer"
+required = false
+default = 1000
+min = 1
+description = "Maximum form fields per request"
+
+[[table.field]]
+name = "required_env_vars"
+type = "array"
+array_item_type = "string"
+required = false
+description = "List of environment variables required at proxy startup"
+
+[[table.field]]
+name = "sensitive_field_patterns"
+type = "array"
+array_item_type = "string"
+required = false
+description = "List of field name patterns to treat as sensitive for masking in logs (e.g., '*_key', 'secret')"
 
 # ========================================================================================
 # RUNBEAM TABLE - Runbeam Cloud integration configuration
@@ -160,6 +221,63 @@ min = 1
 max = 65535
 description = "TCP listener bind port - Port number for the TCP listener"
 
+[[table.field]]
+name = "tcp_config.cert_path"
+type = "string"
+required = false
+description = "Path to PEM-encoded TLS certificate chain for HTTPS (optional, enables HTTPS when both cert_path and key_path are provided)"
+
+[[table.field]]
+name = "tcp_config.key_path"
+type = "string"
+required = false
+description = "Path to PEM-encoded TLS private key for HTTPS (optional, enables HTTPS when both cert_path and key_path are provided). Supports PKCS#8 (preferred) and RSA PKCS#1 key formats."
+
+[[table.field]]
+name = "tcp_config.force_https"
+type = "boolean"
+required = false
+default = false
+description = "Force HTTPS redirect - when true, returns HTTP 301 redirect to https:// URL for all requests. Only applies when TLS is NOT configured (no cert_path/key_path)."
+
+[[table.field]]
+name = "http3"
+type = "table"
+required = false
+description = "HTTP/3 (QUIC) listener configuration. When present, enables HTTP/3 on this network alongside TCP-based protocols."
+
+[[table.field]]
+name = "http3.bind_address"
+type = "string"
+required = true
+required_if = "http3 exists"
+default = "0.0.0.0"
+description = "UDP bind address for HTTP/3 listener"
+
+[[table.field]]
+name = "http3.bind_port"
+type = "integer"
+required = true
+required_if = "http3 exists"
+default = 443
+min = 1
+max = 65535
+description = "UDP port for HTTP/3 listener"
+
+[[table.field]]
+name = "http3.cert_path"
+type = "string"
+required = true
+required_if = "http3 exists"
+description = "Path to PEM-encoded TLS certificate chain for HTTP/3 (required for QUIC)"
+
+[[table.field]]
+name = "http3.key_path"
+type = "string"
+required = true
+required_if = "http3 exists"
+description = "Path to PEM-encoded TLS private key for HTTP/3 (required for QUIC)"
+
 # ========================================================================================
 # LOGGING TABLE - Logging configuration
 # ========================================================================================
@@ -215,23 +333,276 @@ description = "Backend-specific options"
 [[table.field]]
 name = "options.path"
 type = "string"
-required = true
-required_if = "backend == 'filesystem'"
-description = "Filesystem path for file storage"
+required = false
+default = "./tmp"
+description = "Filesystem path for file storage (for filesystem backend)"
 
 [[table.field]]
 name = "options.bucket"
 type = "string"
 required = true
 required_if = "backend == 's3'"
-description = "S3 bucket name"
+description = "S3 bucket name (for s3 backend)"
 
 [[table.field]]
 name = "options.region"
 type = "string"
 required = false
 required_if = "backend == 's3'"
-description = "S3 region"
+description = "S3 region (for s3 backend, default is provider-specific if omitted)"
+
+[[table.field]]
+name = "options.access_key_id"
+type = "string"
+required = false
+required_if = "backend == 's3'"
+description = "S3 access key ID when using explicit credentials"
+
+[[table.field]]
+name = "options.secret_access_key"
+type = "string"
+required = false
+required_if = "backend == 's3'"
+description = "S3 secret access key when using explicit credentials"
+
+[[table.field]]
+name = "options.endpoint"
+type = "string"
+required = false
+required_if = "backend == 's3'"
+description = "Custom S3-compatible endpoint URL (for e.g. MinIO or non-AWS providers)"
+
+# ========================================================================================
+# PEERS TABLE - Peer system configurations
+# ========================================================================================
+[[table]]
+name = "peers.*"
+pattern = true
+pattern_constraint = "^[a-z0-9_-]+$"
+required = false
+description = "Peer system configurations for external systems that can send requests to Harmony services (e.g., peers.hospital_a, peers.imaging_center)"
+
+[[table.field]]
+name = "id"
+type = "string"
+required = false
+description = "Optional unique identifier for this peer"
+
+[[table.field]]
+name = "name"
+type = "string"
+required = false
+description = "Human-readable name for this peer system"
+
+[[table.field]]
+name = "connection"
+type = "table"
+required = true
+description = "Connection configuration for this peer"
+
+[[table.field]]
+name = "connection.host"
+type = "string"
+required = true
+required_if = "connection exists"
+description = "Hostname, IP address, or URL of the peer system (e.g., 'hospital.example.com', '192.168.1.100', 'https://api.example.com')"
+
+[[table.field]]
+name = "connection.port"
+type = "integer"
+required = false
+min = 1
+max = 65535
+description = "Port number for the peer connection (optional if included in host URL)"
+
+[[table.field]]
+name = "connection.base_path"
+type = "string"
+required = false
+description = "Base path or URL prefix for the peer connection (e.g., '/api/v1')"
+
+[[table.field]]
+name = "connection.ca_cert_path"
+type = "string"
+required = false
+description = "Path to custom CA certificate (PEM format) for TLS validation. Used with https and h3 protocols when connecting to servers with self-signed or custom CA certificates."
+
+[[table.field]]
+name = "protocol"
+type = "string"
+required = true
+enum = ["http", "https", "h3", "dicom", "harmony", "fhir", "hl7v2", "custom"]
+description = "Protocol type used by the peer system. 'h3' indicates HTTP/3 over QUIC. Note: 'type' is accepted as an alias for backward compatibility in TOML files"
+
+# Backward Compatibility: The field was previously named 'type' in schema versions prior to 1.9.0.
+# TOML files may still use 'type' which will be aliased to 'protocol' during deserialization.
+# Both names are accepted in configuration files for backward compatibility.
+[[table.field]]
+name = "type"
+type = "string"
+required = false
+enum = ["http", "https", "h3", "dicom", "harmony", "fhir", "hl7v2", "custom"]
+description = "[DEPRECATED - use 'protocol'] Protocol type used by the peer system. Maintained for backward compatibility."
+
+[[table.field]]
+name = "description"
+type = "string"
+required = false
+description = "Description of the peer system and its purpose"
+
+[[table.field]]
+name = "enabled"
+type = "boolean"
+required = false
+default = true
+description = "Whether this peer is currently enabled and can send requests"
+
+[[table.field]]
+name = "authentication"
+type = "string"
+required = false
+description = "Reference to an authentication configuration (e.g., 'authentications.my-auth')"
+
+[[table.field]]
+name = "tags"
+type = "array"
+array_item_type = "string"
+required = false
+description = "Optional tags for categorizing or filtering peers"
+
+[[table.field]]
+name = "timeout_secs"
+type = "integer"
+required = false
+default = 30
+min = 1
+max = 300
+description = "Request timeout in seconds when communicating with this peer"
+
+[[table.field]]
+name = "max_retries"
+type = "integer"
+required = false
+default = 3
+min = 0
+max = 10
+description = "Maximum number of retry attempts for failed requests from this peer"
+
+# ========================================================================================
+# TARGETS TABLE - Target system configurations
+# ========================================================================================
+[[table]]
+name = "targets.*"
+pattern = true
+pattern_constraint = "^[a-z0-9_-]+$"
+required = false
+description = "Target system configurations for external systems that receive requests from Harmony backends (e.g., targets.upstream_api, targets.data_warehouse)"
+
+[[table.field]]
+name = "id"
+type = "string"
+required = false
+description = "Optional unique identifier for this target"
+
+[[table.field]]
+name = "name"
+type = "string"
+required = false
+description = "Human-readable name for this target system"
+
+[[table.field]]
+name = "connection"
+type = "table"
+required = true
+description = "Connection configuration for this target"
+
+[[table.field]]
+name = "connection.host"
+type = "string"
+required = true
+required_if = "connection exists"
+description = "Hostname, IP address, or URL of the target system (e.g., 'api.example.com', '192.168.1.100', 'https://api.example.com')"
+
+[[table.field]]
+name = "connection.port"
+type = "integer"
+required = false
+min = 1
+max = 65535
+description = "Port number for the target connection (optional if included in host URL)"
+
+[[table.field]]
+name = "connection.base_path"
+type = "string"
+required = false
+description = "Base path or URL prefix for the target connection (e.g., '/api/v1')"
+
+[[table.field]]
+name = "connection.ca_cert_path"
+type = "string"
+required = false
+description = "Path to custom CA certificate (PEM format) for TLS validation. Used with https and h3 protocols when connecting to servers with self-signed or custom CA certificates."
+
+[[table.field]]
+name = "protocol"
+type = "string"
+required = true
+enum = ["http", "https", "h3", "dicom", "harmony", "fhir", "hl7v2", "custom"]
+description = "Protocol type used by the target system."
+
+# Backward Compatibility: The field was previously named 'type' in schema versions prior to 1.9.0.
+# TOML files may still use 'type' which will be aliased to 'protocol' during deserialization.
+# Both names are accepted in configuration files for backward compatibility.
+[[table.field]]
+name = "type"
+type = "string"
+required = false
+enum = ["http", "https", "h3", "dicom", "harmony", "fhir", "hl7v2", "custom"]
+description = "[DEPRECATED - use 'protocol'] Protocol type used by the target system. Maintained for backward compatibility."
+
+[[table.field]]
+name = "description"
+type = "string"
+required = false
+description = "Description of the target system and its purpose"
+
+[[table.field]]
+name = "enabled"
+type = "boolean"
+required = false
+default = true
+description = "Whether this target is currently enabled and can receive requests"
+
+[[table.field]]
+name = "authentication"
+type = "string"
+required = false
+description = "Reference to an authentication configuration (e.g., 'authentications.my-auth')"
+
+[[table.field]]
+name = "tags"
+type = "array"
+array_item_type = "string"
+required = false
+description = "Optional tags for categorizing or filtering targets"
+
+[[table.field]]
+name = "timeout_secs"
+type = "integer"
+required = false
+default = 30
+min = 1
+max = 300
+description = "Request timeout in seconds when communicating with this target"
+
+[[table.field]]
+name = "max_retries"
+type = "integer"
+required = false
+default = 3
+min = 0
+max = 10
+description = "Maximum number of retry attempts for failed requests to this target"
 
 # ========================================================================================
 # SERVICES TABLE - Service type registrations
@@ -254,6 +625,236 @@ name = "module"
 type = "string"
 required = true
 description = "Module path for this service type (empty string for built-in)"
+
+[[table.field]]
+name = "type"
+type = "array"
+array_item_type = "string"
+required = false
+enum = ["endpoint", "backend"]
+min_items = 1
+description = "Service capabilities - indicates whether this service can be used as an endpoint (receives requests) and/or backend (forwards requests). Can specify one or both."
+
+# ========================================================================================
+# AUTHENTICATIONS TABLE - Authentication configurations
+# ========================================================================================
+[[table]]
+name = "authentications.*"
+pattern = true
+pattern_constraint = "^[a-z0-9_-]+$"
+required = false
+description = "Authentication configurations that can be referenced by peers, endpoints, and middleware"
+
+[[table.field]]
+name = "id"
+type = "string"
+required = true
+description = "Unique identifier for the authentication configuration"
+
+[[table.field]]
+name = "method"
+type = "string"
+required = true
+enum = ["jwt", "basic", "bearer", "api_key", "mutual_tls", "custom", "none"]
+description = "Authentication method/type"
+
+[[table.field]]
+name = "options"
+type = "table"
+required = false
+description = "Authentication-specific options"
+
+[[table.field]]
+name = "options.credentials_path"
+type = "string"
+required = false
+description = "Path to credentials file (for basic auth, api keys, certificates, etc.)"
+
+# Basic Auth Options
+[[table.field]]
+name = "options.username"
+type = "string"
+required = false
+description = "Username for basic auth"
+
+[[table.field]]
+name = "options.password"
+type = "string"
+required = false
+description = "Password for basic auth"
+
+# JWT Auth Options
+[[table.field]]
+name = "options.issuer"
+type = "string"
+required = false
+description = "JWT token issuer"
+
+[[table.field]]
+name = "options.audience"
+type = "string"
+required = false
+description = "JWT token audience"
+
+[[table.field]]
+name = "options.trusted_issuers"
+type = "array"
+array_item_type = "string"
+required = false
+min_items = 1
+description = "List of trusted JWT token issuers for validation. When specified, JWTs must have an 'iss' claim matching one of these values."
+
+[[table.field]]
+name = "options.jwks_uri"
+type = "string"
+required = false
+description = "JWKS (JSON Web Key Set) URI for fetching public keys to verify JWT signatures (e.g., 'https://auth.example.com/.well-known/jwks.json')"
+
+[[table.field]]
+name = "options.algorithms"
+type = "array"
+array_item_type = "string"
+required = false
+min_items = 1
+description = "List of allowed JWT signing algorithms (e.g., ['RS256', 'ES256']). If not specified, accepts common secure algorithms."
+
+[[table.field]]
+name = "options.required_claims"
+type = "array"
+array_item_type = "string"
+required = false
+min_items = 1
+description = "List of claims that must be present in the JWT (e.g., ['sub', 'email', 'scope'])"
+
+[[table.field]]
+name = "options.public_key_path"
+type = "string"
+required = false
+description = "Filesystem path to RSA public key PEM for JWT RS256 verification"
+
+[[table.field]]
+name = "options.use_hs256"
+type = "boolean"
+required = false
+description = "Use HS256 with a shared secret instead of RS256 public key"
+
+[[table.field]]
+name = "options.hs256_secret"
+type = "string"
+required = false
+description = "Shared secret for HS256 JWT validation when options.use_hs256 is true"
+
+[[table.field]]
+name = "options.leeway_secs"
+type = "integer"
+required = false
+default = 0
+min = 0
+max = 300
+description = "Leeway in seconds for validating exp (expiration) and nbf (not before) claims to account for clock skew (preferred name; alias for options.leeway_seconds)"
+
+[[table.field]]
+name = "options.leeway_seconds"
+type = "integer"
+required = false
+default = 0
+min = 0
+max = 300
+description = "[DEPRECATED - use 'options.leeway_secs'] Leeway in seconds for validating exp (expiration) and nbf (not before) claims to account for clock skew"
+
+[[table.field]]
+name = "options.validate_expiry"
+type = "boolean"
+required = false
+default = true
+description = "Whether to validate the JWT expiration (exp) claim"
+
+# ========================================================================================
+# POLICIES TABLE - Policy definitions (multiple instances)
+# ========================================================================================
+[[table]]
+name = "policies.*"
+pattern = true
+pattern_constraint = "^[a-z0-9_-]+$"
+required = false
+description = "Policy definitions that can be referenced by policies middleware. Each policy contains rules that define access control logic."
+
+[[table.field]]
+name = "id"
+type = "string"
+required = true
+description = "Unique identifier for the policy (must match the table suffix)"
+
+[[table.field]]
+name = "name"
+type = "string"
+required = false
+description = "Human-readable name for the policy"
+
+[[table.field]]
+name = "enabled"
+type = "boolean"
+required = false
+default = true
+description = "Whether this policy is enabled and should be applied"
+
+[[table.field]]
+name = "rules"
+type = "array"
+array_item_type = "string"
+required = false
+min_items = 1
+description = "Array of rule IDs that this policy uses. Rules are defined in the top-level [rules.*] tables."
+
+# ========================================================================================
+# RULES TABLE - Rule definitions (multiple instances)
+# ========================================================================================
+[[table]]
+name = "rules.*"
+pattern = true
+pattern_constraint = "^[a-z0-9_-]+$"
+required = false
+description = "Rule definitions that can be referenced by policies. Each rule defines access control logic."
+
+[[table.field]]
+name = "id"
+type = "string"
+required = true
+description = "Unique identifier for the rule (must match the table suffix)"
+
+[[table.field]]
+name = "name"
+type = "string"
+required = false
+description = "Human-readable name for the rule"
+
+[[table.field]]
+name = "type"
+type = "string"
+required = true
+description = "Type of rule (e.g., 'allow_all', 'deny_all', 'ip_allow', 'ip_deny', 'rate_limit', etc.)"
+
+[[table.field]]
+name = "weight"
+type = "integer"
+required = false
+default = 100
+min = 0
+max = 1000
+description = "Priority weight for rule evaluation (higher values = higher priority)"
+
+[[table.field]]
+name = "enabled"
+type = "boolean"
+required = false
+default = true
+description = "Whether this rule is currently active"
+
+[[table.field]]
+name = "options"
+type = "table"
+required = false
+description = "Rule-specific configuration options (structure depends on rule type)"
 
 # ========================================================================================
 # MIDDLEWARE_TYPES TABLE - Middleware type registrations

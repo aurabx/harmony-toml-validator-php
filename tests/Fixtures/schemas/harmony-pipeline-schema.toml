@@ -3,7 +3,7 @@
 # It can be parsed and validated in both Rust (harmony-proxy) and PHP (runbeam cloud API)
 
 [schema]
-version = "1.4.0"
+version = "1.10.0"
 description = "Harmony Proxy pipeline configuration schema for routing and middleware chains"
 
 # ========================================================================================
@@ -82,6 +82,57 @@ required = true
 description = "Service type for this endpoint (must match a registered service)"
 
 [[table.field]]
+name = "peer_ref"
+type = "string"
+required = false
+description = "Reference to a peer defined in the main config. When set, inherits the peer's connection settings as defaults."
+
+[[table.field]]
+name = "connection"
+type = "table"
+required = false
+description = "Connection configuration for this endpoint (overrides peer_ref settings if both are specified)"
+
+[[table.field]]
+name = "connection.host"
+type = "string"
+required = false
+description = "Hostname, IP address, or URL for this endpoint (overrides peer_ref.connection.host)"
+
+[[table.field]]
+name = "connection.port"
+type = "integer"
+required = false
+min = 1
+max = 65535
+description = "Port number for this endpoint (overrides peer_ref.connection.port)"
+
+[[table.field]]
+name = "connection.protocol"
+type = "string"
+required = false
+enum = ["http", "https", "h3", "dicom", "harmony", "fhir", "hl7v2", "custom"]
+description = "Protocol type for this endpoint. 'h3' indicates HTTP/3 over QUIC (overrides peer_ref.protocol)"
+
+[[table.field]]
+name = "connection.base_path"
+type = "string"
+required = false
+description = "Base path or URL prefix for this endpoint (overrides peer_ref.connection.base_path)"
+
+[[table.field]]
+name = "connection.ca_cert_path"
+type = "string"
+required = false
+description = "Path to custom CA certificate (PEM format) for TLS validation with https/h3 protocols (overrides peer_ref.connection.ca_cert_path)"
+
+[[table.field]]
+name = "authentication"
+type = "string"
+required = false
+description = "Reference to an authentication configuration (e.g., 'authentications.my-auth') (overrides peer_ref authentication)"
+
+[[table.field]]
 name = "options"
 type = "table"
 required = false
@@ -94,12 +145,33 @@ type = "string"
 required = false
 description = "Path prefix for HTTP endpoints"
 
+# JMIX Service Endpoint Options
+[[table.field]]
+name = "options.skip_hashing"
+type = "boolean"
+required = false
+default = false
+description = "When true, the JMIX endpoint skips content hashing during package generation. Defaults to false."
+
+[[table.field]]
+name = "options.skip_listing"
+type = "boolean"
+required = false
+default = false
+description = "When true, the JMIX endpoint skips directory listing when building JMIX packages. Defaults to false."
+
 # DICOM Service Endpoint Options
 [[table.field]]
 name = "options.aet"
 type = "string"
 required = false
-description = "Application Entity Title for DICOM endpoints"
+description = "[DEPRECATED - use 'local_aet'] Application Entity Title for DICOM endpoints (was previously used for the local AE title)"
+
+[[table.field]]
+name = "options.local_aet"
+type = "string"
+required = false
+description = "Local Application Entity Title for DICOM SCP endpoints (e.g., 'HARMONY_SCP')"
 
 [[table.field]]
 name = "options.port"
@@ -108,6 +180,48 @@ required = false
 min = 1
 max = 65535
 description = "Port for DICOM endpoints"
+
+[[table.field]]
+name = "options.bind_addr"
+type = "string"
+required = false
+description = "Optional listener bind address override for inbound endpoints (e.g., DICOM SCP). When set, this address is used for the listening socket instead of connection.host or the network's tcp_config.bind_address."
+
+[[table.field]]
+name = "options.enable_echo"
+type = "boolean"
+required = false
+description = "Whether to enable support for C-ECHO operations on this DICOM SCP endpoint"
+
+[[table.field]]
+name = "options.enable_store"
+type = "boolean"
+required = false
+description = "Whether to enable support for C-STORE operations on this DICOM SCP endpoint"
+
+[[table.field]]
+name = "options.enable_find"
+type = "boolean"
+required = false
+description = "Whether to enable support for C-FIND operations on this DICOM SCP endpoint"
+
+[[table.field]]
+name = "options.enable_move"
+type = "boolean"
+required = false
+description = "Whether to enable support for C-MOVE operations on this DICOM SCP endpoint"
+
+[[table.field]]
+name = "options.enable_get"
+type = "boolean"
+required = false
+description = "Whether to enable support for C-GET operations on this DICOM SCP endpoint"
+
+[[table.field]]
+name = "options.storage_dir"
+type = "string"
+required = false
+description = "Optional storage directory override for received DICOM files when using filesystem-backed C-STORE"
 
 # ========================================================================================
 # BACKENDS TABLE - Backend configurations (multiple instances)
@@ -132,6 +246,73 @@ required = true
 description = "Service type for this backend (must match a registered service)"
 
 [[table.field]]
+name = "target_ref"
+type = "string"
+required = false
+description = "Reference to a target defined in the main config. When set, inherits the target's connection settings as defaults."
+
+[[table.field]]
+name = "connection"
+type = "table"
+required = false
+description = "Connection configuration for this backend (overrides target_ref settings if both are specified)"
+
+[[table.field]]
+name = "connection.host"
+type = "string"
+required = false
+description = "Hostname, IP address, or URL for this backend (overrides target_ref.connection.host)"
+
+[[table.field]]
+name = "connection.port"
+type = "integer"
+required = false
+min = 1
+max = 65535
+description = "Port number for this backend (overrides target_ref.connection.port)"
+
+[[table.field]]
+name = "connection.protocol"
+type = "string"
+required = false
+enum = ["http", "https", "h3", "dicom", "harmony", "fhir", "hl7v2", "custom"]
+description = "Protocol type for this backend. 'h3' indicates HTTP/3 over QUIC (overrides target_ref.protocol)"
+
+[[table.field]]
+name = "connection.base_path"
+type = "string"
+required = false
+description = "Base path or URL prefix for this backend (overrides target_ref.connection.base_path)"
+
+[[table.field]]
+name = "connection.ca_cert_path"
+type = "string"
+required = false
+description = "Path to custom CA certificate (PEM format) for TLS validation with https/h3 protocols (overrides target_ref.connection.ca_cert_path)"
+
+[[table.field]]
+name = "authentication"
+type = "string"
+required = false
+description = "Reference to an authentication configuration (e.g., 'authentications.my-auth') (overrides target_ref authentication)"
+
+[[table.field]]
+name = "timeout_secs"
+type = "integer"
+required = false
+min = 1
+max = 300
+description = "Request timeout in seconds for this backend (overrides target_ref.timeout_secs)"
+
+[[table.field]]
+name = "max_retries"
+type = "integer"
+required = false
+min = 0
+max = 10
+description = "Maximum retry attempts for this backend (overrides target_ref.max_retries)"
+
+[[table.field]]
 name = "options"
 type = "table"
 required = false
@@ -149,6 +330,24 @@ name = "options.base_url"
 type = "string"
 required = false
 description = "Base URL for HTTP backends"
+
+# HTTP/3 Backend Options
+# Note: HTTP/3 backends use the 'http3' service type and connect over QUIC/TLS 1.3.
+# The connection config should have protocol = "h3" or use the dedicated http3 service.
+[[table.field]]
+name = "options.ca_cert_path"
+type = "string"
+required = false
+description = "Path to custom CA certificate (PEM format) for HTTP/3 TLS validation. Required for self-signed certificates."
+
+[[table.field]]
+name = "options.timeout_secs"
+type = "integer"
+required = false
+default = 30
+min = 1
+max = 300
+description = "Request timeout in seconds for HTTP/3 backends"
 
 # DICOM Backend Options
 [[table.field]]
@@ -177,6 +376,151 @@ type = "string"
 required = false
 description = "Local Application Entity Title for DICOM SCU operations"
 
+# Storage Backend Options
+[[table.field]]
+name = "options.root"
+type = "string"
+required = false
+description = "Root location for storage backends (e.g., local filesystem directory like 'data/archive' or an S3 URL such as 's3://bucket/prefix')"
+
+[[table.field]]
+name = "options.write_pattern"
+type = "string"
+required = false
+description = "Write pattern template for storage backends (e.g., '{file}' to use the file field from the C-STORE payload)"
+
+[[table.field]]
+name = "options.read_pattern"
+type = "string"
+required = false
+description = "Read pattern template for storage backends when performing GET/read operations (e.g., '{storedPath}' or '{tenant}/{filename}.dcm')"
+
+[[table.field]]
+name = "options.region"
+type = "string"
+required = false
+description = "S3 region override when using an S3-backed storage root"
+
+# ========================================================================================
+# PIPELINE MESH INGRESS TABLE - Nested ingress definitions
+# ========================================================================================
+[[table]]
+name = "pipelines.*.mesh.ingress.*"
+pattern = true
+pattern_constraint = "^[a-z0-9._-]+$"
+required = false
+description = "Mesh ingress definition nested under a specific pipeline"
+
+[[table.field]]
+name = "type"
+type = "string"
+required = true
+enum = ["http", "http3"]
+description = "Protocol type for incoming mesh requests"
+
+[[table.field]]
+name = "mode"
+type = "string"
+required = false
+enum = ["default", "mesh"]
+default = "default"
+description = "Ingress mode: 'default' allows all requests, 'mesh' requires valid mesh authentication"
+
+[[table.field]]
+name = "endpoint"
+type = "string"
+required = false
+description = "Optional endpoint override. If omitted, the first endpoint listed for the pipeline is used."
+
+[[table.field]]
+name = "urls"
+type = "array"
+required = true
+array_item_type = "string"
+min_items = 1
+description = "List of URLs that map to this ingress"
+
+[[table.field]]
+name = "description"
+type = "string"
+required = false
+description = "Human-readable description of this ingress point"
+
+[[table.field]]
+name = "enabled"
+type = "boolean"
+required = false
+default = true
+description = "Whether this ingress is currently active"
+
+# ========================================================================================
+# PIPELINE MESH EGRESS TABLE - Nested egress definitions
+# ========================================================================================
+[[table]]
+name = "pipelines.*.mesh.egress.*"
+pattern = true
+pattern_constraint = "^[a-z0-9._-]+$"
+required = false
+description = "Mesh egress definition nested under a specific pipeline"
+
+[[table.field]]
+name = "type"
+type = "string"
+required = true
+enum = ["http", "http3"]
+description = "Protocol type for outgoing mesh requests"
+
+[[table.field]]
+name = "mode"
+type = "string"
+required = false
+enum = ["default", "mesh"]
+default = "default"
+description = "Egress mode: 'default' allows all destinations, 'mesh' requires destination to match a mesh ingress"
+
+[[table.field]]
+name = "backend"
+type = "string"
+required = false
+description = "Optional backend override. If omitted, the first backend listed for the pipeline is used."
+
+[[table.field]]
+name = "description"
+type = "string"
+required = false
+description = "Human-readable description of this egress point"
+
+[[table.field]]
+name = "enabled"
+type = "boolean"
+required = false
+default = true
+description = "Whether this egress is currently active"
+
+[[table.field]]
+name = "options.bucket"
+type = "string"
+required = false
+description = "S3 bucket override when using an S3-backed storage root (normally inferred from the 'root' URL)"
+
+[[table.field]]
+name = "options.access_key_id"
+type = "string"
+required = false
+description = "S3 access key ID for S3-backed storage"
+
+[[table.field]]
+name = "options.secret_access_key"
+type = "string"
+required = false
+description = "S3 secret access key for S3-backed storage"
+
+[[table.field]]
+name = "options.endpoint"
+type = "string"
+required = false
+description = "Custom S3-compatible endpoint URL for S3-backed storage (e.g., MinIO)"
+
 # ========================================================================================
 # MIDDLEWARE TABLE - Middleware instance configurations (multiple instances)
 # ========================================================================================
@@ -200,29 +544,17 @@ required = true
 description = "Middleware type (must match a registered middleware_type)"
 
 [[table.field]]
+name = "authentication"
+type = "string"
+required = false
+description = "Reference to an authentication configuration for this middleware"
+
+[[table.field]]
 name = "options"
 type = "table"
 required = false
 description = "Middleware-specific options"
 
-# Basic Auth Middleware Options
-[[table.field]]
-name = "options.token_path"
-type = "string"
-required = false
-description = "Path to token file for basic_auth middleware"
-
-[[table.field]]
-name = "options.username"
-type = "string"
-required = false
-description = "Username for basic_auth middleware"
-
-[[table.field]]
-name = "options.password"
-type = "string"
-required = false
-description = "Password for basic_auth middleware"
 
 # Transform Middleware Options
 [[table.field]]
@@ -237,27 +569,22 @@ type = "string"
 required = false
 enum = ["left", "right", "both"]
 default = "left"
-description = "When to apply transform: left (request), right (response), or both"
+description = "When to apply middleware on the left (request), right (response), or both sides of the pipeline. Used by transform, log_dump, and webhook middleware types."
 
 [[table.field]]
 name = "options.fail_on_error"
 type = "boolean"
 required = false
 default = false
-description = "Whether to fail the request if transform fails"
-
-# JWT Auth Middleware Options
-[[table.field]]
-name = "options.issuer"
-type = "string"
-required = false
-description = "JWT token issuer for jwtauth middleware"
+description = "Whether to fail the request if transform middleware fails"
 
 [[table.field]]
-name = "options.audience"
-type = "string"
+name = "options.debug"
+type = "boolean"
 required = false
-description = "JWT token audience for jwtauth middleware"
+default = false
+description = "Enable debug logging and additional diagnostic output for transform middleware. Defaults to false."
+
 
 # Path Filter Middleware Options
 [[table.field]]
@@ -280,9 +607,98 @@ type = "string"
 required = false
 description = "Path pattern to deny using matchit syntax (e.g., '*' for deny-all). Mutually exclusive with 'allow'."
 
+# Policies Middleware Options
+[[table.field]]
+name = "options.policies"
+type = "array"
+array_item_type = "string"
+required = false
+min_items = 1
+description = "Array of policy IDs for the policies middleware type. Policies are defined in the top-level [policies.*] tables."
+
+# JMIX Builder Middleware Options
+[[table.field]]
+name = "options.store_dir"
+type = "string"
+required = false
+description = "Optional override for the JMIX builder's staging directory. When set, resolve_store_root(options) writes JMIX packages here instead of using the global storage backend."
+
+# Log Dump Middleware Options
+[[table.field]]
+name = "options.pretty"
+type = "boolean"
+required = false
+default = true
+description = "Whether to pretty-print JSON output for the log_dump middleware. Defaults to true."
+
+[[table.field]]
+name = "options.max_bytes"
+type = "integer"
+required = false
+default = 65536
+min = 0
+description = "Maximum number of bytes from request/response content to include in log_dump output. Defaults to 65536."
+
+[[table.field]]
+name = "options.redact_headers"
+type = "array"
+array_item_type = "string"
+required = false
+description = "List of HTTP header names to redact from log_dump output (case-insensitive)."
+
+[[table.field]]
+name = "options.redact_metadata"
+type = "array"
+array_item_type = "string"
+required = false
+description = "List of metadata keys to redact from log_dump output."
+
+[[table.field]]
+name = "options.redact_data_fields"
+type = "array"
+array_item_type = "string"
+required = false
+description = "List of normalized data field paths to redact from log_dump output (dot path notation)."
+
+[[table.field]]
+name = "options.label"
+type = "string"
+required = false
+description = "Optional label used by the log_dump middleware to identify the dump location within the pipeline."
+
+# Webhook Middleware Options
+[[table.field]]
+name = "options.endpoint"
+type = "string"
+required = false
+required_if = "type == 'webhook'"
+description = "Webhook endpoint URL for the webhook middleware (http/https)."
+
+[[table.field]]
+name = "options.redact_headers"
+type = "array"
+array_item_type = "string"
+required = false
+description = "List of HTTP header names to redact from the webhook payload (case-insensitive)."
+
+[[table.field]]
+name = "options.redact_metadata"
+type = "array"
+array_item_type = "string"
+required = false
+description = "List of metadata keys to redact from the webhook payload."
+
+[[table.field]]
+name = "options.timeout_secs"
+type = "integer"
+required = false
+default = 5
+min = 1
+max = 300
+description = "Timeout in seconds for the webhook POST. Defaults to 5 seconds."
+
 # ========================================================================================
 # MIDDLEWARE_TYPES TABLE - Additional middleware type registrations (optional, for pipeline-specific types)
-# ========================================================================================
 [[table]]
 name = "middleware_types.*"
 pattern = true

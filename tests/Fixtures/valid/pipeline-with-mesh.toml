@@ -1,0 +1,69 @@
+[pipelines.imaging]
+id = "pipeline-imaging"
+description = "DICOM imaging pipeline"
+networks = ["default"]
+endpoints = ["dicom-scp"]
+middleware = ["auth-check", "log-request"]
+backends = ["dicom-server"]
+
+[pipelines.imaging.mesh.ingress.main]
+type = "http"
+mode = "default"
+urls = ["https://api.example.com/imaging"]
+enabled = true
+
+[pipelines.imaging.mesh.egress.storage]
+type = "http"
+mode = "default"
+description = "DICOM storage backend"
+enabled = true
+
+[endpoints.dicom-scp]
+id = "endpoint-dicom-scp"
+service = "dicom"
+peer_ref = "peers.local"
+
+[endpoints.dicom-scp.options]
+local_aet = "HARMONY_SCP"
+port = 104
+enable_echo = true
+enable_store = true
+enable_find = true
+
+[backends.dicom-server]
+id = "backend-dicom-server"
+service = "dicom"
+target_ref = "targets.pacs"
+timeout_secs = 60
+
+[backends.dicom-server.options]
+aet = "PACS_SERVER"
+host = "pacs.internal.example.com"
+port = 104
+
+[middleware.auth-check]
+id = "mw-auth"
+type = "jwt_auth"
+authentication = "authentications.jwt-auth"
+
+[middleware.log-request]
+id = "mw-log"
+type = "log_dump"
+
+[middleware.log-request.options]
+pretty = true
+max_bytes = 65536
+label = "request-handler"
+apply = "left"
+
+[policies.imaging-policy]
+id = "imaging-policy"
+name = "Imaging Access Control"
+enabled = true
+rules = ["allow-all"]
+
+[rules.allow-all]
+id = "allow-all"
+type = "allow_all"
+weight = 100
+enabled = true

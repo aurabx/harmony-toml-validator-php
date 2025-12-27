@@ -1,0 +1,65 @@
+[proxy]
+id = "gateway-integration"
+pipelines_path = "pipelines"
+
+[network.default]
+enable_wireguard = false
+
+[[network.default.tcp_config]]
+bind_address = "0.0.0.0"
+bind_port = 8080
+
+[logging]
+log_level = "info"
+
+[storage]
+backend = "filesystem"
+
+[storage.options]
+path = "./tmp"
+
+[peers.hospital_a]
+id = "peer-hospital-a"
+name = "Hospital A"
+protocol = "https"
+timeout_secs = 60
+max_retries = 3
+authentication = "authentications.hospital-a-auth"
+
+[peers.hospital_a.connection]
+host = "api.hospital-a.example.com"
+port = 443
+base_path = "/api/v1"
+ca_cert_path = "/etc/certs/hospital-a-ca.pem"
+
+[targets.data_warehouse]
+id = "target-warehouse"
+name = "Data Warehouse"
+protocol = "https"
+timeout_secs = 30
+max_retries = 2
+authentication = "authentications.warehouse-auth"
+
+[targets.data_warehouse.connection]
+host = "warehouse.internal.example.com"
+port = 443
+base_path = "/data"
+
+[authentications.hospital-a-auth]
+id = "hospital-a-auth"
+method = "mutual_tls"
+
+[authentications.warehouse-auth]
+id = "warehouse-auth"
+method = "api_key"
+
+[authentications.warehouse-auth.options]
+credentials_path = "/etc/secrets/warehouse-api-key"
+
+[services.http]
+module = ""
+type = ["endpoint", "backend"]
+
+[services.fhir]
+module = ""
+type = ["endpoint", "backend"]
